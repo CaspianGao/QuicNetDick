@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>文件上传与下载</title>
+</head>
+
+<body>
+    <h1>文件上传与下载</h1>
+
+    <!-- 文件上传表单 -->
+    <form id="uploadForm" action="/upload" method="post" enctype="multipart/form-data">
+        <label for="file">选择文件:</label>
+        <input type="file" id="file" name="file" required>
+        <button type="submit">上传</button>
+    </form>
+
+    <hr>
+
+    <!-- 文件列表 -->
+    <h2>已上传文件</h2>
+    <ul id="fileList"></ul>
+
+    <script>
+        async function fetchFileList() {
+            const token = localStorage.getItem('token');
+            const response = await fetch('/uploads', {
+                headers: {
+                    'Authorization': token
+                }
+            });
+
+            if (response.ok) {
+                const files = await response.json();
+                const fileList = document.getElementById('fileList');
+                fileList.innerHTML = '';
+
+                files.forEach(file => {
+                    const listItem = document.createElement('li');
+                    const link = document.createElement('a');
+                    link.href = `/download?file=${encodeURIComponent(file)}`;
+                    link.textContent = file;
+                    link.download = file;
+
+                    const deleteButton = document.createElement('button');
+                    deleteButton.textContent = '删除';
+                    deleteButton.style.marginLeft = '10px';
+                    deleteButton.onclick = async () => {
+                        if (confirm(`确定要删除文件 "${file}" 吗？`)) {
+                            const deleteResponse = await fetch(`/delete?file=${encodeURIComponent(file)}`, {
+                                method: 'DELETE',
+                                headers: {
+                                    'Authorization': token
+                                }
+                            });
+
+                            if (deleteResponse.ok) {
+                                alert('文件删除成功');
+                                fetchFileList();
+                            } else {
+                                alert('文件删除失败');
+                            }
+                        }
+                    };
+
+                    listItem.appendChild(link);
+                    listItem.appendChild(deleteButton);
+                    fileList.appendChild(listItem);
+                });
+            } else {
+                alert('获取文件列表失败，请重新登录');
+                window.location.href = '/static/login.html';
+            }
+        }
+
+        document.getElementById('uploadForm').addEventListener('submit', async (event) => {
+            event.preventDefault();
+            const formData = new FormData(event.target);
+            const token = localStorage.getItem('token');
+
+            const response = await fetch('/upload', {
+                method: 'POST',
+                headers: {
+                    'Authorization': token
+                },
+                body: formData
+            });
+
+            if (response.ok) {
+                alert('文件上传成功');
+                fetchFileList();
+            } else {
+                alert('文件上传失败，请重新登录');
+                window.location.href = '/static/login.html';
+            }
+        });
+
+        fetchFileList();
+    </script>
+</body>
+
+</html>
