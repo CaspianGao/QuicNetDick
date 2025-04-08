@@ -75,11 +75,14 @@ func downloadHandler(c *gin.Context) {
 
 	filePath := filepath.Join(uploadDir, filename)
 	if _, err := os.Stat(filePath); os.IsNotExist(err) {
-		c.String(http.StatusNotFound, "File not found")
+		c.JSON(http.StatusNotFound, gin.H{"error": "File not found"})
 		return
 	}
 
-	c.FileAttachment(filePath, filename)
+	// 设置正确的 Content-Type 和文件名
+	c.Header("Content-Disposition", `attachment; filename="`+filename+`"`)
+	c.Header("Content-Type", "application/octet-stream")
+	c.File(filePath)
 }
 
 func uploadsHandler(c *gin.Context) {

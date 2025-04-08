@@ -40,9 +40,31 @@
                 files.forEach(file => {
                     const listItem = document.createElement('li');
                     const link = document.createElement('a');
-                    link.href = `/download?file=${encodeURIComponent(file)}`;
                     link.textContent = file;
-                    link.download = file;
+
+                    // 使用 fetch 下载文件并附带 token
+                    link.onclick = async (event) => {
+                        event.preventDefault();
+                        const downloadResponse = await fetch(`/download?file=${encodeURIComponent(file)}`, {
+                            headers: {
+                                'Authorization': token
+                            }
+                        });
+
+                        if (downloadResponse.ok) {
+                            const blob = await downloadResponse.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const a = document.createElement('a');
+                            a.href = url;
+                            a.download = file;
+                            document.body.appendChild(a);
+                            a.click();
+                            document.body.removeChild(a);
+                            window.URL.revokeObjectURL(url);
+                        } else {
+                            alert('文件下载失败');
+                        }
+                    };
 
                     const deleteButton = document.createElement('button');
                     deleteButton.textContent = '删除';
